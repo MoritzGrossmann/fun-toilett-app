@@ -77,26 +77,23 @@ https.createServer({
 
 
 // eslint-disable-next-line no-unused-vars
-var ascoltatore = {
-  //using ascoltatore
-  type: 'mongo',
-  url: 'mongodb://localhost:27017/mqtt',
-  pubsubCollection: 'ascoltatori',
-  mongo: {}
-};
-
 var settings = {
-  port: MQTT_PORT
+  http: {
+    port: 1884,
+    bundle: true,
+    static: './'
+  }
 };
 
 var server = new mosca.Server(settings);
+
 
 server.on('clientConnected', function (client) {
   console.log('client connected', client.id);
 });
 
 // fired when a message is received
-server.on('published', function (packet, client) {
+server.on('published', function (packet) {
   console.log('Packet', packet);
 
   db.get(TOILETT_TABLE)
@@ -108,16 +105,6 @@ server.on('published', function (packet, client) {
     .value();
 
   console.log("toilett", toilett);
-
-  var message = {
-    topic: `/${packet.topic}`,
-    payload: 'Hello', // or a Buffer
-    qos: 2, // 0, 1, or 2
-    retain: false // or true
-  };
-  //server.publish(message, () => {
-  //  console.log("send message...");
-  //});
 });
 
 server.on('ready', setup);

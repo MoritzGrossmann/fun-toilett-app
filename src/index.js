@@ -10,8 +10,13 @@ if (typeof (module.hot) !== 'undefined') {
 var room_id = localStorage.getItem('room_id');
 
 if (room_id) {
-    var url = `mqtt://${window.location.host.split(':')[0]}:1883`;
-    var client = mqtt.connect(url);
+    window.mqtt = mqtt;
+    var url = `mqtt://${window.location.host.split(':')[0]}:1884`;
+    var client = mqtt.connect(url, {
+        clientId: 'mqttjs_' + Math.random().toString(16).substr(2, 8),
+
+    });
+    client.subscribe(`toilett/${room_id}`);
     window.mqttclient = client;
     console.log(`connected to Room ${room_id}`);
 
@@ -24,9 +29,8 @@ if (room_id) {
     });
 
     client.on('message', function (topic, message) {
-        // message is Buffer
+        new Notification("Toilettenapp", { body: message.toString() });
         console.log(message.toString());
-        client.end();
     });
 }
 
