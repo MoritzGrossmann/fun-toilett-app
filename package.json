@@ -6,8 +6,7 @@
   "main": "app.js",
   "scripts": {
     "serve": "npm run buildDev && npm run start",
-    "buildDev": "rimraf dist && webpack --mode development --config webpack.server.config.js && webpack --mode development --config webpack.dev.config.js",
-    "buildProd": "rimraf dist && webpack --mode production --config webpack.server.config.js && webpack --mode production --config webpack.prod.config.js",
+    "build": "rimraf dist && webpack --mode development --config webpack.server.config.js && webpack --mode development --config webpack.config.js",
     "start": "node ./dist/server.js"
   },
   "dependencies": {

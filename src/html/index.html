@@ -2,11 +2,48 @@
 
 <head>
     <meta charset="utf-8" />
+    <title>Toiletten-App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" />
 </head>
 
 <body>
+    <nav class="navbar navbar-light bg-light">
+        <a class="navbar-brand" href="#">
+            <img src="/favicon.jpg" width="30" height="30" class="d-inline-block align-top" alt="" />
+            Toiletten-App
+        </a>
+    </nav>
     <div class="container">
+        <div class="list-group">
+            <div data-bind="foreach: rooms" class="list-group-item">
+                <div class="row">
+                    <div class="col-md-6">
+                        <span data-bind="text: name"></span>
+                        <span data-bind="if: occupied" class="badge badge-danger">besetzt</span>
+                        <span data-bind="ifnot: occupied" class="badge badge-success">frei</span>
+                    </div>
+                    <div class="col-md-1">
 
+                    </div>
+                    <div class="col-md-2 offset-md-3">
+                        <div data-bind="if: $parent.choosenRoom().id === id">
+                            <button class=" btn btn-danger btn-sm"
+                                data-bind="click: function() { $parent.unchooseRoom($data)}">
+                                <i class="fas fa-ban mr-2"></i>
+                                unsubscribe
+                            </button>
+                        </div>
+                        <div data-bind=" ifnot: $parent.choosenRoom().id === id">
+                            <button class=" btn btn-primary btn-sm"
+                                data-bind="click: function() { $parent.chooseRoom($data)}">
+                                <i class="fas fa-rss-square mr-2"></i>
+                                subscribe
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 

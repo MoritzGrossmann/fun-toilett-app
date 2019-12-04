@@ -2,10 +2,8 @@ const path = require('path');
 // eslint-disable-next-line no-unused-vars
 const webpack = require('webpack');
 const nodeExternals = require('webpack-node-externals');
-module.exports = (env, argv) => {
-    const SERVER_PATH = (argv.mode === 'production') ?
-        './src/server/server-prod.js' :
-        './src/server/server-dev.js';
+module.exports = () => {
+    const SERVER_PATH = "./src/server/server.js";
     return ({
         entry: {
             server: SERVER_PATH,

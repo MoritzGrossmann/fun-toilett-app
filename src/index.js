@@ -18,20 +18,55 @@ var mqttclient = mqtt.connect(window.mqtturl, {
 
 var viewModel = function (mqttclient, room) {
     var self = this;
+
+    self.connections = ko.observableArray([]);
+
+    self.chooseRoom = function (room) {
+        self.choosenRoom(room);
+        self.subscribe(room.id);
+    };
+
+    self.unchooseRoom = function (room) {
+        self.choosenRoom(null);
+        localStorage.removeItem('room_id');
+        self.unsubscribe(room.id);
+    };
+
+    self.test = function () {
+        console.log("test...");
+    };
+
     self.choosenRoom = ko.observable(room);
 
     self.rooms = ko.observableArray();
 
-    self.join = function (room) {
+    self.subscribe = function (room) {
+        self.connections().forEach(r => {
+            self.unsubscribe(r);
+        });
+
         console.log(`connecting to toilett ${room}...`);
         mqttclient.subscribe(`toilett/${room}`);
+        self.connections.push(room);
         console.log(`connected`);
+
+        localStorage.setItem('room_id', room);
+    };
+
+    self.unsubscribe = function (room) {
+        console.log(`unsubscribe toilett ${room}`);
+        mqttclient.unsubscribe(`toilett/${room}`);
+        self.connections.remove(room);
+        console.log(`unsubscribed`);
     };
 
     self.loadToiletts = function () {
         self.rooms = ko.observableArray([]);
         api.get('toilett').then(response => {
             response.data.forEach(t => {
+                if (room && t.id === parseInt(room)) {
+                    self.choosenRoom(t);
+                }
                 self.rooms.push(t);
             });
         });
@@ -47,6 +82,9 @@ var viewModel = function (mqttclient, room) {
             var text = `${toilett.name} ist jetzt ${frei ? 'frei' : 'besetzt'}`;
 
             new Notification("Toilettenapp", { body: text, icon: frei ? '/icons/free.png' : '/icons/occupied.png' });
+
+            self.rooms.replace(toilett, { id: toilett.id, name: toilett.name, occupied: !frei });
+
             console.log(message.toString());
         } else {
             console.warn(`toilette ${index} wurde nicht gefunden`);
@@ -55,7 +93,22 @@ var viewModel = function (mqttclient, room) {
 
     self.loadToiletts();
 
-    if (room) self.join(self.choosenRoom());
+    if (room) self.subscribe(self.choosenRoom());
 };
+
+var checkNotifications = function () {
+    if (!("Notification" in window)) {
+        alert("This browser does not support desktop notification");
+    }
+
+    // Otherwise, we need to ask the user for permission
+    else if (Notification.permission !== 'denied') {
+        Notification.requestPermission(function (permission) {
+            console.log(`Notification-permissions: ${permission}`);
+        });
+    }
+};
+
+checkNotifications();
 
 ko.applyBindings(new viewModel(mqttclient, room_id));

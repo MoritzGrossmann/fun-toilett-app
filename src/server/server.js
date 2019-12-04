@@ -3,8 +3,9 @@ import express from 'express';
 import webpack from 'webpack';
 import webpackDevMiddleware from 'webpack-dev-middleware';
 import webpackHotMiddleware from 'webpack-hot-middleware';
-import config from '../../webpack.dev.config.js';
+import config from '../../webpack.config.js';
 import https from 'https';
+import http from 'http';
 import fs from 'fs';
 import low from 'lowdb';
 import FileSync from 'lowdb/adapters/FileSync';
@@ -65,16 +66,22 @@ app.get('/', (req, res, next) => {
 });
 
 
-const PORT = process.env.PORT || 8080;
+const HTTPS_PORT = process.env.HTTPS_PORT || 443;
 
 https.createServer({
   key: fs.readFileSync('server.key'),
   cert: fs.readFileSync('server.cert')
 }, app)
-  .listen(PORT, function () {
-    console.log(`App listening to ${PORT}....`);
-    console.log('Press Ctrl+C to quit.');
+  .listen(HTTPS_PORT, function () {
+    console.log(`Webserver is up and running Port ${HTTPS_PORT}`);
   });
+
+const HTTP_PORT = process.env.HTTP_PORT || 80;
+
+http.createServer(function (req, res) {
+  res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
+  res.end();
+}).listen(HTTP_PORT);
 
 /* ####### MQTT Server ######### */
 
