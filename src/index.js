@@ -27,9 +27,9 @@ var viewModel = function (mqttclient, room) {
     };
 
     self.unchooseRoom = function (room) {
-        self.choosenRoom(null);
         localStorage.removeItem('room_id');
         self.unsubscribe(room.id);
+        self.choosenRoom({ id: -1 });
     };
 
     self.test = function () {
