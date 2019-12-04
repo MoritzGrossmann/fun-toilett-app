@@ -30,6 +30,8 @@ app.use(webpackHotMiddleware(compiler));
 
 app.use(express.json());
 
+app.use(express.static('public'));
+
 app.get('/api/toilett', (req, res) => {
   var toiletts = db
     .get(TOILETT_TABLE)

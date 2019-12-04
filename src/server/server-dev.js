@@ -17,6 +17,7 @@ const app = express(),
   HTML_FILE = path.join(DIST_DIR, 'index.html'),
   DB_FILE = path.join(__dirname, 'db.json'),
   MQTT_PORT = 1883,
+  MQTT_WEBSOCKET_PORT = 1884,
   TOILETT_TABLE = "toiletts",
   compiler = webpack(config);
 
@@ -33,6 +34,8 @@ app.use(webpackDevMiddleware(compiler, {
 app.use(webpackHotMiddleware(compiler));
 
 app.use(express.json());
+
+app.use(express.static(__dirname + '/public'));
 
 app.get('/api/toilett', (req, res) => {
   var toiletts = db
@@ -79,7 +82,7 @@ https.createServer({
 // eslint-disable-next-line no-unused-vars
 var settings = {
   http: {
-    port: 1884,
+    port: MQTT_WEBSOCKET_PORT,
     bundle: true,
     static: './'
   }
@@ -87,29 +90,39 @@ var settings = {
 
 var server = new mosca.Server(settings);
 
-
 server.on('clientConnected', function (client) {
   console.log('client connected', client.id);
 });
 
 // fired when a message is received
 server.on('published', function (packet) {
-  console.log('Packet', packet);
+  console.log('Published', packet.topic, packet.payload.toString());
 
-  db.get(TOILETT_TABLE)
-    .find({ id: parseInt(packet.topic) })
-    .assign({ 'occupied': packet.payload })
-    .write();
+  if (packet.topic.startsWith("toilett")) {
 
-  var toilett = db.get(TOILETT_TABLE[parseInt(packet.topic)])
-    .value();
+    var toilett = parseInt(packet.topic.split('/')[1] || '-1');
+    var payload = parseInt(packet.payload.toString());
 
-  console.log("toilett", toilett);
+    console.log('Toilett: ' + toilett);
+
+    if (toilett > -1 && !isNaN(payload)) {
+      db.get(TOILETT_TABLE)
+        .find({ id: toilett })
+        .assign({ 'occupied': payload })
+        .write();
+
+      var toilettRec = db.get(TOILETT_TABLE[toilett])
+        .value();
+
+      console.log("toilett", toilettRec);
+    }
+  }
 });
 
 server.on('ready', setup);
 
 // fired when the mqtt server is ready
 function setup() {
-  console.log(`Mosca server is up and running on Port ${MQTT_PORT}`);
+  console.log(`MQTT server is up and running on Port ${MQTT_PORT}`);
+  console.log(`MQTT websocket is up and running on Port ${MQTT_WEBSOCKET_PORT}`);
 }

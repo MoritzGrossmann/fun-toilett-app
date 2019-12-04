@@ -1,5 +1,7 @@
 import './scss/style.scss';
 import mqtt from 'mqtt';
+import ko from "knockout";
+import { api } from './js/api';
 // Log message to console
 
 // Needed for Hot Module Replacement
@@ -9,28 +11,51 @@ if (typeof (module.hot) !== 'undefined') {
 
 var room_id = localStorage.getItem('room_id');
 
-if (room_id) {
-    window.mqtt = mqtt;
-    var url = `mqtt://${window.location.host.split(':')[0]}:1884`;
-    var client = mqtt.connect(url, {
-        clientId: 'mqttjs_' + Math.random().toString(16).substr(2, 8),
+window.mqtturl = `mqtt://${window.location.host.split(':')[0]}:1884`;
+var mqttclient = mqtt.connect(window.mqtturl, {
+    clientId: 'mqttjs_' + Math.random().toString(16).substr(2, 8),
+});
 
-    });
-    client.subscribe(`toilett/${room_id}`);
-    window.mqttclient = client;
-    console.log(`connected to Room ${room_id}`);
+var viewModel = function (mqttclient, room) {
+    var self = this;
+    self.choosenRoom = ko.observable(room);
 
-    client.on('connect', function () {
-        client.subscribe('presence', function (err) {
-            if (!err) {
-                client.publish('presence', 'Hello mqtt');
-            }
+    self.rooms = ko.observableArray();
+
+    self.join = function (room) {
+        console.log(`connecting to toilett ${room}...`);
+        mqttclient.subscribe(`toilett/${room}`);
+        console.log(`connected`);
+    };
+
+    self.loadToiletts = function () {
+        self.rooms = ko.observableArray([]);
+        api.get('toilett').then(response => {
+            response.data.forEach(t => {
+                self.rooms.push(t);
+            });
         });
+    };
+
+    mqttclient.on('message', function (topic, message) {
+        var index = topic.split('/')[1];
+
+        var toilett = self.rooms()[index];
+        var frei = parseInt(message.toString()) === 0;
+
+        if (toilett) {
+            var text = `${toilett.name} ist jetzt ${frei ? 'frei' : 'besetzt'}`;
+
+            new Notification("Toilettenapp", { body: text, icon: frei ? '/icons/free.png' : '/icons/occupied.png' });
+            console.log(message.toString());
+        } else {
+            console.warn(`toilette ${index} wurde nicht gefunden`);
+        }
     });
 
-    client.on('message', function (topic, message) {
-        new Notification("Toilettenapp", { body: message.toString() });
-        console.log(message.toString());
-    });
-}
+    self.loadToiletts();
 
+    if (room) self.join(self.choosenRoom());
+};
+
+ko.applyBindings(new viewModel(mqttclient, room_id));
